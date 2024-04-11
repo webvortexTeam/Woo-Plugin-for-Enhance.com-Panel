@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Enhance Integration by Vortex
  * Plugin URI: https://webvortex.com/enhance-integration
- * Description: A professional WordPress starter plugin focusing on enhanced security measures.
+ * Description: Intergation with enhance.com .
  * Version: 1.0.0
  * Author: WebVortex
  * Author URI: https://webvortex.com
