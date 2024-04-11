@@ -1,5 +1,5 @@
-# Enhance Integration with WooCommerce
-![Logo](/images/white_enhance.svg "Enhance Logo")  <img src="/images/woo.png" alt="Woo Logo" width="32" height="32">
+# ![Logo](/images/white_enhance.svg "Enhance Logo")  Enhance Integration with WooCommerce
+<img src="/images/woo.png" alt="Woo Logo" width="32" height="32">
 
 Enhance Integration to WooCommerce subscriptions
 
