@@ -2,6 +2,8 @@
 # Enhance Integration with WooCommerce !**BETA**!
 <img src="/images/woo.png" alt="Woo Logo" width="32" height="32">
 
+**<a href="https://github.com/esjau/Woo-Plugin-for-Enhance.com-Panel/raw/main/enhance.zip" target="_blank">DOWNLOAD HERE</a>**
+
 Enhance Integration to WooCommerce subscriptions
 
 ## Features
