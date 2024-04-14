@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 }
 class Subscription_Order_Handler
 {
+    const APP_WORDPRESS = 'wordpress';
     private $orgUUID;
     private $apikey;
 	//private $lastPlanId;
@@ -47,88 +48,107 @@ class Subscription_Order_Handler
 
     public function handleOrderCompletion($subscription)
     {
+        
         $last_order_id = $subscription->get_last_order();
-		$order = wc_get_order($last_order_id);
-        $orgUUID = get_option("orgId");
-        $user_id = $order->get_customer_id();
-        $EnhanceDomain = $order->get_meta('EnhanceDomain');
-		$_enhance_plan = (int)$order->get_meta('_enhance_plan', true);
+        $order = wc_get_order($last_order_id);
+        if (!$order) {
+            error_log("No order found for subscription ID: " . $subscription->get_id());
+            return;
+        }
+        foreach ($order->get_items() as $item_id => $item) 
+        {
+            $product = $item->get_product();
 
-        if ($user_id) {
-            $user = get_user_by("id", $user_id);
-
-            if ($user) {
-                $email = $user->user_email;
-                $name = $user->display_name;
+            if ($product) {
+                $enable_enhance = $product->get_meta('_enable_enhance', true);
+                
+                if ($enable_enhance === 'yes') {
+                
+                    $orgUUID = get_option("orgId");
+                    $user_id = $order->get_customer_id();
+                    $EnhanceDomain = $order->get_meta('EnhanceDomain');
+                    $_enhance_plan = (int)$order->get_meta('_enhance_plan', true);
+            
+                    if ($user_id) {
+                        $user = get_user_by("id", $user_id);
+            
+                        if ($user) {
+                            $email = $user->user_email;
+                            $name = $user->display_name;
+                        }
+                    } else {
+                        $this->log($order, "User is not registered.");
+                    }
+            
+                    $customerExists = $this->checkLogin($order, $name, $email, $orgUUID);
+                    if (!$customerExists) {
+                        $password = $this->generatePassword();
+            
+                        $customerOrg = $this->createCustomer($order, $name);
+                        if (!$customerOrg) {
+                            return;
+                        }
+            
+                        $loginUUID = $this->createLogin(
+                            $order,
+                            $name,
+                            $email,
+                            $password,
+                            $customerOrg
+                        );
+            
+                        if ($loginUUID) {
+                            $this->assignRoles($order, $loginUUID, $customerOrg);
+                        }
+                            $user_id = $subscription->get_user_id(); // This gets the user ID from the subscription
+            
+                            $subscription->update_meta_data('_enhance_subscription_loginUUID', $loginUUID);
+                            $subscription->save();
+                            $subscription->update_meta_data('_enhance_subscription_customerOrg', $customerOrg);
+                            $subscription->save();
+                             update_user_meta($user_id, '_enhance_subscription_loginUUID', $loginUUID);
+                             update_user_meta($user_id, '_enhance_subscription_customerOrg', $customerOrg);
+                    } else {
+                            $user_id = $subscription->get_user_id(); // This gets the user ID from the subscription
+            
+                        $loginUUID = $customerExists['ownerId']; // Modify this based on your requirement
+                        $customerOrg = $customerExists['id']; // Modify this based on your requirement
+                        $subscription->update_meta_data('_enhance_subscription_loginUUID', $loginUUID);
+                        $subscription->save();
+                        $subscription->update_meta_data('_enhance_subscription_customerOrg', $customerOrg);
+                        $subscription->save();
+                       update_user_meta($user_id, '_enhance_subscription_loginUUID', $loginUUID);
+                     update_user_meta($user_id, '_enhance_subscription_customerOrg', $customerOrg);
+                    }
+                    
+                    $domainExists = $this->domainExists($order, $orgUUID, $EnhanceDomain);
+                    
+                    if (!$domainExists)
+                    {
+                            //$this->lastPlanId = $this->planCreation($order, $_enhance_plan, $customerOrg, $orgUUID);
+                            $planId = $this->planCreation($order, $_enhance_plan, $customerOrg, $orgUUID);	
+            
+                        if ($planId)
+                        {
+                            $domainCreation = $this->domainCreation($order, $EnhanceDomain, $customerOrg, $planId);
+                            $subscription->update_meta_data('_enhance_subscription_plan_id', $planId);
+                            $subscription->save();		
+                        }
+            
+                    }
+                
+                
+                
+                }
             }
-        } else {
-            $this->log($order, "User is not registered.");
         }
 
-        $customerExists = $this->checkLogin($order, $name, $email, $orgUUID);
-        if (!$customerExists) {
-            $password = $this->generatePassword();
-
-            $customerOrg = $this->createCustomer($order, $name);
-            if (!$customerOrg) {
-                return;
-            }
-
-            $loginUUID = $this->createLogin(
-                $order,
-                $name,
-                $email,
-                $password,
-                $customerOrg
-            );
-
-            if ($loginUUID) {
-                $this->assignRoles($order, $loginUUID, $customerOrg);
-            }
-                $user_id = $subscription->get_user_id(); // This gets the user ID from the subscription
-
-				$subscription->update_meta_data('_enhance_subscription_loginUUID', $loginUUID);
-				$subscription->save();
-				$subscription->update_meta_data('_enhance_subscription_customerOrg', $customerOrg);
-				$subscription->save();
-                 update_user_meta($user_id, '_enhance_subscription_loginUUID', $loginUUID);
-                 update_user_meta($user_id, '_enhance_subscription_customerOrg', $customerOrg);
-        } else {
-                $user_id = $subscription->get_user_id(); // This gets the user ID from the subscription
-
-			$loginUUID = $customerExists['ownerId']; // Modify this based on your requirement
-			$customerOrg = $customerExists['id']; // Modify this based on your requirement
-			$subscription->update_meta_data('_enhance_subscription_loginUUID', $loginUUID);
-			$subscription->save();
-			$subscription->update_meta_data('_enhance_subscription_customerOrg', $customerOrg);
-			$subscription->save();
-           update_user_meta($user_id, '_enhance_subscription_loginUUID', $loginUUID);
-         update_user_meta($user_id, '_enhance_subscription_customerOrg', $customerOrg);
-        }
-		
-		$domainExists = $this->domainExists($order, $orgUUID, $EnhanceDomain);
-		
-		if (!$domainExists)
-		{
-				//$this->lastPlanId = $this->planCreation($order, $_enhance_plan, $customerOrg, $orgUUID);
-				$planId = $this->planCreation($order, $_enhance_plan, $customerOrg, $orgUUID);	
-
-			if ($planId)
-			{
-				$domainCreation = $this->domainCreation($order, $EnhanceDomain, $customerOrg, $planId);
-				$subscription->update_meta_data('_enhance_subscription_plan_id', $planId);
-				$subscription->save();		
-			}
-
-		}
 		
     }
 
 public function shortcodeApiCallHandler($SSOurl) {
-    // Assuming you have a way to dynamically get these IDs
     $user_id = get_current_user_id();
 
-    // Assuming you have a method to get these values
     $customerOrg = get_user_meta($user_id, '_enhance_subscription_customerOrg', true);
     $loginUUID = get_user_meta($user_id, '_enhance_subscription_loginUUID', true);
     $SSOurl = $this->createSSO($loginUUID, $customerOrg)
@@ -147,36 +167,53 @@ public function handleOrderCompletionCancelled($subscription)
     $order = wc_get_order($last_order_id);
 
     if (!$order) {
-        return; // Exit if the order could not be retrieved
+        return;
     }
 
-    $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
-    $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
+    foreach ($order->get_items() as $item_id => $item) 
+    {
+        $product = $item->get_product();
 
-
-    if (!$planId || !$customerOrg) {
-        return; // Exit if necessary data is missing
+        if ($product) {
+            $enable_enhance = $product->get_meta('_enable_enhance', true);
+            
+            if ($enable_enhance === 'yes') {
+            
+                $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
+                $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
+            
+            
+                if (!$planId || !$customerOrg) {
+                    return;
+                }
+            
+                    $url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
+            
+                    $args = array(
+                        'method'    => 'DELETE',
+                        'headers'   => array(
+                            'Content-Type' => 'application/json',
+                            "Authorization" => "Bearer " . $this->apikey,
+            
+                        ),
+                    );
+            
+                $response = wp_remote_request($url, $args);
+            
+                if (is_wp_error($response)) {
+                    $error_message = $response->get_error_message();
+                } else {
+                    $response_code = wp_remote_retrieve_response_code($response);
+                    $response_body = wp_remote_retrieve_body($response);
+                }
+            
+            
+            
+            }
+        }
     }
 
-		$url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
-
-		$args = array(
-			'method'    => 'DELETE',
-			'headers'   => array(
-				'Content-Type' => 'application/json',
-				"Authorization" => "Bearer " . $this->apikey,
-
-			),
-		);
-
-    $response = wp_remote_request($url, $args);
-
-    if (is_wp_error($response)) {
-        $error_message = $response->get_error_message();
-    } else {
-        $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
-    }
+    
 }
 public function handleOrderCompletionUnHolde($subscription)
 {
@@ -186,45 +223,58 @@ public function handleOrderCompletionUnHolde($subscription)
     $order = wc_get_order($last_order_id);
 
     if (!$order) {
-        return; // Exit if the order could not be retrieved
+        return;
     }
-
-    $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
-    $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
-
-
-    // Ensure planId and customerOrg are valid before proceeding
-    if (!$planId || !$customerOrg) {
-        return; // Exit if necessary data is missing
+    foreach ($order->get_items() as $item_id => $item) 
+    {
+        $product = $item->get_product();
+    if ($product) {
+        $enable_enhance = $product->get_meta('_enable_enhance', true);
+        
+        if ($enable_enhance === 'yes') {
+            $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
+            $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
+        
+        
+            if (!$planId || !$customerOrg) {
+                return;
+            }
+        
+                $url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
+        
+                $body_data = array(
+                    'status' => 'active',
+                    'isSuspended' => false,
+                );
+        
+                $body_json = wp_json_encode( $body_data );
+        
+                $args = array(
+                    'method'    => 'PATCH',
+                    'headers'   => array(
+                        'Content-Type' => 'application/json',
+                        "Authorization" => "Bearer " . $this->apikey,
+        
+                    ),
+                    'body'      => $body_json,
+                );
+        
+            $response = wp_remote_request($url, $args);
+        
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+            } else {
+                $response_code = wp_remote_retrieve_response_code($response);
+                $response_body = wp_remote_retrieve_body($response);
+            }  
+        
+        
+        
+        
+        }
     }
+}
 
-		$url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
-
-		$body_data = array(
-			'status' => 'active',
-			'isSuspended' => false,
-		);
-
-		$body_json = wp_json_encode( $body_data );
-
-		$args = array(
-			'method'    => 'PATCH',
-			'headers'   => array(
-				'Content-Type' => 'application/json',
-				"Authorization" => "Bearer " . $this->apikey,
-
-			),
-			'body'      => $body_json,
-		);
-
-    $response = wp_remote_request($url, $args);
-
-    if (is_wp_error($response)) {
-        $error_message = $response->get_error_message();
-    } else {
-        $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
-    }
 }
 public function handleOrderCompletionHolde($subscription)
 {
@@ -234,44 +284,56 @@ public function handleOrderCompletionHolde($subscription)
     $order = wc_get_order($last_order_id);
 
     if (!$order) {
-        return; // Exit if the order could not be retrieved
+        return;
     }
-
-    $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
-    $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
-
-
-    if (!$planId || !$customerOrg) {
-        return; // Exit if necessary data is missing
+    foreach ($order->get_items() as $item_id => $item) 
+    {
+        $product = $item->get_product();
+    if ($product) {
+        $enable_enhance = $product->get_meta('_enable_enhance', true);
+        
+        if ($enable_enhance === 'yes') {
+            $planId = $subscription->get_meta('_enhance_subscription_plan_id', true);
+            $customerOrg = $subscription->get_meta('_enhance_subscription_customerOrg', true);
+        
+        
+            if (!$planId || !$customerOrg) {
+                return;
+            }
+        
+                $url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
+        
+                $body_data = array(
+                    'status' => 'active',
+                    'isSuspended' => true,
+                );
+        
+                $body_json = wp_json_encode( $body_data );
+        
+                $args = array(
+                    'method'    => 'PATCH',
+                    'headers'   => array(
+                        'Content-Type' => 'application/json',
+                        "Authorization" => "Bearer " . $this->apikey,
+        
+                    ),
+                    'body'      => $body_json,
+                );
+        
+            $response = wp_remote_request($url, $args);
+        
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+            } else {
+                $response_code = wp_remote_retrieve_response_code($response);
+                $response_body = wp_remote_retrieve_body($response);
+            }
+        
+        
+        }
     }
-
-		$url = $this->host . "/api/orgs/$customerOrg/subscriptions/$planId";
-
-		$body_data = array(
-			'status' => 'active',
-			'isSuspended' => true,
-		);
-
-		$body_json = wp_json_encode( $body_data );
-
-		$args = array(
-			'method'    => 'PATCH',
-			'headers'   => array(
-				'Content-Type' => 'application/json',
-				"Authorization" => "Bearer " . $this->apikey,
-
-			),
-			'body'      => $body_json,
-		);
-
-    $response = wp_remote_request($url, $args);
-
-    if (is_wp_error($response)) {
-        $error_message = $response->get_error_message();
-    } else {
-        $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
-    }
+}
+    
 }
 
 
@@ -309,8 +371,6 @@ public function handleOrderCompletionHolde($subscription)
     private function createSSO($loginUUID, $customerOrg)
     {
         $user_id = get_current_user_id();
-
-        // Assuming you have a method to get these values
         $customerOrg = get_user_meta($user_id, '_enhance_subscription_customerOrg', true);
         $loginUUID = get_user_meta($user_id, '_enhance_subscription_loginUUID', true);
         $response = $this->getRequest(
@@ -396,18 +456,55 @@ public function handleOrderCompletionHolde($subscription)
 		}
     }
 	
-    private function domainCreation($order, $EnhanceDomain, $customerOrg, $planId)
-    {
-        $response = $this->postRequest("/api/orgs/$customerOrg/websites", [
-            "domain" => $EnhanceDomain,
-			"subscriptionId" => $planId,
-        ]);
+private function domainCreation($order, $EnhanceDomain, $customerOrg, $planId)
+{
+    $response = $this->postRequest("/api/orgs/$customerOrg/websites", [
+        "domain" => $EnhanceDomain,
+        "subscriptionId" => $planId,
+    ]);
 
-        if (!$response) {
-            return null;
-        }
-        return $response->id ?? null;
+    if (!$response) {
+        $this->log($order, "Failed to create domain");
+        return null;
     }
+
+    $websiteDetails = $this->getRequest("/api/orgs/{$customerOrg}/websites?search=$EnhanceDomain");
+
+    if (empty($websiteDetails["items"])) {
+        $this->log($order, "Website details not found after creation");
+        return null;
+    }
+
+    $websiteID = null;
+    $domainID = null;
+    foreach ($websiteDetails["items"] as $item) {
+        if (isset($item["id"]) && isset($item["domain"]["id"])) {
+            $websiteID = $item["id"]; 
+            $domainID = $item["domain"]["id"];
+        }
+    }
+
+    if (!$websiteID || !$domainID) {
+        $this->log($order, "Website or domain ID not found");
+        return null;
+    }
+
+    $billing_email = $order->get_billing_email();
+    $password = $this->generatePassword();
+    $wpname = $this->generateWPUserName();
+    
+    $response2 = $this->postRequest("/api/orgs/{$customerOrg}/websites/{$websiteID}/apps", [
+        "app" => "wordpress",
+        "version" => "6.5.2",
+        "path" => "/",
+        "adminUsername" => $wpname,
+        "adminPassword" => $password,
+        "adminEmail" => $billing_email,
+        "domainId" => $domainID,
+    ]);
+
+}
+
 	
     private function planCreation($order, $_enhance_plan, $customerOrg, $orgUUID)
     {
@@ -455,7 +552,16 @@ private function planCreationId($subscription, $order) {
         }
         return $password;
     }
-
+    private function generateWPUserName($length = 7)
+    {
+        $chars =
+            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $generateWPUserName = "";
+        for ($i = 0; $i < $length; $i++) {
+            $generateWPUserName .= $chars[rand(0, strlen($chars) - 1)];
+        }
+        return $generateWPUserName;
+    }
     private function log($order, $note)
     {
         if ($order) {

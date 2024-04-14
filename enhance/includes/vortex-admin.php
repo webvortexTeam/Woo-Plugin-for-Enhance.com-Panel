@@ -77,6 +77,7 @@ class Admin
         <?php
     }
 
+    // Register settings
     public function register_settings()
     {
         register_setting("enhance_panel_group", "host");
@@ -101,7 +102,7 @@ class Admin
             ],
             [
                 "name" => "apikey",
-                "type" => "password",
+                "type" => "text",
                 "friendlyName" => "API key",
                 "required" => true,
                 "tooltip" => "The Api Key of your organization.",
