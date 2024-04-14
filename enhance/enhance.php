@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Enhance Integration by Vortex
  * Description: A professional WordPress starter plugin focusing on intergation of Enhance.com with WooCommerce Subscriptions
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Vortex
  * License: GPL-2.0-or-later
  */
