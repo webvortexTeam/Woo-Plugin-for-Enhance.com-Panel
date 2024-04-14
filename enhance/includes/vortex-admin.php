@@ -102,7 +102,7 @@ class Admin
             ],
             [
                 "name" => "apikey",
-                "type" => "text",
+                "type" => "password",
                 "friendlyName" => "API key",
                 "required" => true,
                 "tooltip" => "The Api Key of your organization.",
@@ -110,7 +110,7 @@ class Admin
             ],
             [
                 "name" => "orgId",
-                "type" => "text",
+                "type" => "password",
                 "friendlyName" => "Organization ID",
                 "required" => true,
                 "tooltip" => "The ID of your organization.",
