@@ -1,5 +1,5 @@
 # ![Logo](/images/white_enhance.svg "Enhance Logo")  
-# Enhance Integration with WooCommerce !**BETA**!
+# Enhance Integration with WooCommerce
 <img src="/images/woo.png" alt="Woo Logo" width="32" height="32">
 
 **<a href="https://github.com/esjau/Woo-Plugin-for-Enhance.com-Panel/raw/main/enhance.zip" target="_blank">DOWNLOAD HERE</a>**
