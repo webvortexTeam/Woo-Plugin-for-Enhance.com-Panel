@@ -6,6 +6,17 @@
 
 Enhance Integration to WooCommerce subscriptions
 
+## Latest Updates
+**Update 1.1**
+
+1. - Wordpress is autoinstalled upon user subscription
+
+> Authentication on wordpress is made with **Billing Email** // **Random Username** // **Randon Password** 
+Version: 6.5.2
+Path: /
+
+2. - Now API calls run only per product Enhance is enabled
+
 ## Features
 
 - **Domain Validation**: Ensures that requests are coming from allowed domains, enhancing security against unauthorized access.
