@@ -33,24 +33,10 @@ After activation, Enhance Integration by Vortex works only with WooCommerce Subs
 - WordPress 5.0 or higher.
 - PHP 7.2 or higher.
 
-## Contributing
-
-We welcome contributions! If you'd like to contribute, please fork the repository and submit a pull request.
-
-1. **Fork it!**
-2. **Create your feature branch:** `git checkout -b my-new-feature`
-3. **Commit your changes:** `git commit -am 'Add some feature'`
-4. **Push to the branch:** `git push origin my-new-feature`
-5. **Submit a pull request.**
-
 ## Support
 
-If you encounter any issues or have any questions about using the plugin, please raise issue..
-
-## License
-
-This plugin is licensed under the GPL-2.0-or-later.
+If you encounter any issues or have any questions about using the plugin, please raise issue or comment here..
 
 ---
 
-Developed with ❤ by WebVotex
+Developed with ❤ by Vortex
