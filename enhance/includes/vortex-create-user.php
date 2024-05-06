@@ -555,7 +555,7 @@ private function planCreationId($subscription, $order) {
     private function generateWPUserName($length = 7)
     {
         $chars =
-            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $generateWPUserName = "";
         for ($i = 0; $i < $length; $i++) {
             $generateWPUserName .= $chars[rand(0, strlen($chars) - 1)];
