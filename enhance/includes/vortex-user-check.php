@@ -34,11 +34,10 @@ class Customer_Exist_Checker {
 
             if (!empty($data) && isset($data['ownerEmail']) && $data['ownerEmail'] === $email) {
                 if (!is_user_logged_in()) {
-                    wc_add_notice(__('User already exists. Please login instead.', 'woocommerce'), 'error');
-                    wp_redirect(wp_login_url());
+                    wc_add_notice(__('User already exists. Please login instead.', 'vortexenhance'), 'error');
                     exit;
                 } else {
-                    wc_add_notice(__('You are already logged in with a different email. Please logout or continue with the current session.', 'woocommerce'), 'error');
+                    wc_add_notice(__('You are already logged in with a different email. Please logout or continue with the current session.', 'vortexenhance'), 'error');
                     return false; 
                 }
             }
