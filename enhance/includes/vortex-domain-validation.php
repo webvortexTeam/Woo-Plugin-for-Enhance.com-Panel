@@ -116,7 +116,7 @@ public function validate_EnhanceDomain_before_add_to_cart($passed, $product_id, 
 }
 
 	    public function display_EnhanceDomain_in_cart($product_name, $cart_item, $cart_item_key) {
-        $EnhanceDomain = WC()->session->get('EnhanceDomain_' . $cart_item['key']);
+        $EnhanceDomain = WC()->session->get('EnhanceDomain' . $cart_item['key']);
         if ($EnhanceDomain) {
             $product_name .= '<br><small>Domain: ' . esc_html($EnhanceDomain) . '</small>';
         }
